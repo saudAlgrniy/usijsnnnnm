@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تشغيل الفيديو مع الترجمة</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        video {
+            width: 80%;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <h1>تشغيل الفيديو مع الترجمة</h1>
+    <input type="text" id="videoUrl" placeholder="أدخل رابط الفيديو هنا">
+    <input type="file" id="vttFile" accept=".vtt">
+    <button onclick="loadVideo()">تشغيل الفيديو</button>
+
+    <video id="videoPlayer" controls>
+        <source id="videoSource" src="" type="video/mp4">
+        الفيديو غير مدعوم.
+    </video>
+
+    <script>
+        function loadVideo() {
+            const url = document.getElementById('videoUrl').value;
+            const videoSource = document.getElementById('videoSource');
+            videoSource.src = url;
+
+            const videoPlayer = document.getElementById('videoPlayer');
+            videoPlayer.load();
+
+            const fileInput = document.getElementById('vttFile');
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    const vttData = e.target.result;
+                    addCuesToVideo(vttData, videoPlayer);
+                };
+
+                reader.readAsText(file);
+            }
+        }
+
+        function addCuesToVideo(vttData, videoPlayer) {
+            const lines = vttData.split('\n');
+            const track = videoPlayer.addTextTrack("subtitles", "الترجمة", "ar");
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line.startsWith("vttcue")) {
+                    const cueMatch = line.match(/vttcue\(([^,]+), ([^)]+)\)/);
+                    if (cueMatch) {
+                        const startTime = parseFloat(cueMatch[1]);
+                        const endTime = parseFloat(cueMatch[2]);
+                        const text = lines[++i].trim(); // النص في السطر التالي
+                        track.addCue(new VTTCue(startTime, endTime, text));
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
